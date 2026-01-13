@@ -11,7 +11,7 @@ function GetIntermedio(req, resp) {
       c."nombre_company",
       a."nombre_area"
     FROM "IntermedioAreasEnCompany" i
-    LEFT JOIN "Companies" c ON i."company_cliente" = c."id"
+    LEFT JOIN "Companies" c ON i."company_cliente"::text = c."elemento_pep"::text
     LEFT JOIN "AreasTrabajos" a ON i."area_cliente" = a."id"
     ORDER BY i."created_at" DESC`,
         (err, res) => {
@@ -36,7 +36,7 @@ function GetIntermedioById(req, resp) {
       c."nombre_company",
       a."nombre_area"
     FROM "IntermedioAreasEnCompany" i
-    LEFT JOIN "Companies" c ON i."company_cliente" = c."id"
+    LEFT JOIN "Companies" c ON i."company_cliente"::text = c."elemento_pep"::text
     LEFT JOIN "AreasTrabajos" a ON i."area_cliente" = a."id"
     WHERE i."id" = $1`,
         [req.params.id],
@@ -53,6 +53,10 @@ function GetIntermedioById(req, resp) {
 
 // GET intermedio by Company ID (útil para obtener todas las áreas de una compañía)
 function GetIntermedioByCompany(req, resp) {
+    const companyId = req.params.companyId;
+    
+    console.log("📍 GetIntermedioByCompany - companyId recibido:", companyId, "tipo:", typeof companyId);
+    
     poolL.query(
         `SELECT 
       i."id",
@@ -60,18 +64,96 @@ function GetIntermedioByCompany(req, resp) {
       i."company_cliente",
       i."area_cliente",
       c."nombre_company",
+      c."elemento_pep",
       a."nombre_area"
     FROM "IntermedioAreasEnCompany" i
-    LEFT JOIN "Companies" c ON i."company_cliente" = c."id"
+    LEFT JOIN "Companies" c ON i."company_cliente"::text = c."elemento_pep"::text
     LEFT JOIN "AreasTrabajos" a ON i."area_cliente" = a."id"
-    WHERE i."company_cliente" = $1
+    WHERE i."company_cliente"::text = $1
     ORDER BY a."nombre_area"`,
-        [req.params.companyId],
+        [companyId],
         (err, res) => {
             if (err) {
                 resp.status(err.status || 500).json({ error: err.message });
                 console.error("❌ Error al obtener intermedio por company:", err);
             } else {
+                console.log("✅ Intermedio encontrado:", res.rows.length, "registros");
+                resp.json(res.rows);
+            }
+        }
+    );
+}
+
+// GET all companies and areas for a coordinator (by area)
+// Obtiene todas las empresas de las áreas asignadas a un coordinador
+// Relación: coordinador (documento_id) → IntermedioCoordinadores → area_encargada → IntermedioAreasEnCompany
+function GetCompaniesByCoordinatorAreas(req, resp) {
+    const coordinadorDocumentoId = req.params.coordinadorId;
+
+    if (!coordinadorDocumentoId) {
+        return resp.status(400).json({ error: "Se requiere el ID/documento del coordinador" });
+    }
+
+    // Obtiene todas las empresas que están en áreas gestionadas por el coordinador
+    // Flujo: coordinador (documento_id) → IntermedioCoordinadores.coordinador 
+    //        → area_encargada → IntermedioAreasEnCompany.area_cliente
+    poolL.query(
+        `SELECT DISTINCT
+      i."id",
+      i."created_at",
+      i."company_cliente",
+      i."area_cliente",
+      c."nombre_company",
+      c."elemento_pep",
+      a."nombre_area"
+    FROM "IntermedioAreasEnCompany" i
+    LEFT JOIN "Companies" c ON i."company_cliente"::text = c."elemento_pep"::text
+    LEFT JOIN "AreasTrabajos" a ON i."area_cliente" = a."id"
+    WHERE i."area_cliente" IN (
+        SELECT DISTINCT "area_encargada" 
+        FROM "IntermedioCoordinadores"
+        WHERE "coordinador" = $1
+    )
+    ORDER BY a."nombre_area", c."nombre_company"`,
+        [coordinadorDocumentoId],
+        (err, res) => {
+            if (err) {
+                resp.status(err.status || 500).json({ error: err.message });
+                console.error("❌ Error al obtener empresas por coordinador:", err);
+            } else {
+                resp.json(res.rows);
+            }
+        }
+    );
+}
+
+// GET areas for a coordinator (áreas asignadas)
+// Retorna las áreas del campo "area_encargada" en IntermedioCoordinadores
+function GetAreasByCoordinator(req, resp) {
+    const coordinadorDocumentoId = req.params.coordinadorId;
+
+    console.log("📍 GetAreasByCoordinator - coordinadorDocumentoId recibido:", coordinadorDocumentoId);
+
+    if (!coordinadorDocumentoId || coordinadorDocumentoId === "undefined") {
+        return resp.status(400).json({ error: "Se requiere el ID/documento del coordinador" });
+    }
+
+    poolL.query(
+        `SELECT DISTINCT
+      a."id",
+      a."nombre_area",
+      ic."area_encargada" as "area_cliente"
+    FROM "IntermedioCoordinadores" ic
+    JOIN "AreasTrabajos" a ON ic."area_encargada" = a."id"
+    WHERE ic."coordinador" = $1
+    ORDER BY a."nombre_area"`,
+        [coordinadorDocumentoId],
+        (err, res) => {
+            if (err) {
+                resp.status(err.status || 500).json({ error: err.message });
+                console.error("❌ Error al obtener áreas del coordinador:", err);
+            } else {
+                console.log("✅ Áreas encontradas:", res.rows);
                 resp.json(res.rows);
             }
         }
@@ -152,6 +234,8 @@ module.exports = {
     GetIntermedio,
     GetIntermedioById,
     GetIntermedioByCompany,
+    GetCompaniesByCoordinatorAreas,
+    GetAreasByCoordinator,
     PostIntermedio,
     PutIntermedioById,
     DeleteIntermedioById

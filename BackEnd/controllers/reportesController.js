@@ -233,13 +233,18 @@ function DeleteReporteById(req, resp) {
 }
 
 // GET reportes by coordinador_id (linked via IntermedioCoordinadores)
+// Flujo: Coordinador (documento_id) → IntermedioCoordinadores (area_encargada) → Reportes (area_trabajo)
 function GetReportesByCoordinador(req, resp) {
-    const coordinadorId = req.params.coordinadorId;
+    const coordinadorDocumentoId = req.params.coordinadorId;
 
-    if (!coordinadorId) {
-        return resp.status(400).json({ error: "Se requiere el ID del coordinador" });
+    console.log("📍 GetReportesByCoordinador - coordinadorDocumentoId recibido:", coordinadorDocumentoId);
+
+    if (!coordinadorDocumentoId || coordinadorDocumentoId === "undefined") {
+        return resp.status(400).json({ error: "Se requiere el ID/documento del coordinador" });
     }
 
+    // La relación correcta es: coordinador → area_encargada en IntermedioCoordinadores
+    // Luego buscamos reportes que tengan area_trabajo en esas áreas
     poolL.query(
         `SELECT 
       r."id",
@@ -254,18 +259,22 @@ function GetReportesByCoordinador(req, resp) {
       a."nombre_area",
       u."nombre_usuario" as "nombre_empleado"
     FROM "Reportes" r
-    JOIN "IntermedioCoordinadores" ic ON r."cliente" = ic."cliente"
     LEFT JOIN "Companies" c ON r."cliente" = c."elemento_pep"
     LEFT JOIN "AreasTrabajos" a ON r."area_trabajo" = a."id"::text
     LEFT JOIN "Usuarios" u ON r."documento_id" = u."documento_id"
-    WHERE ic."coordinador" = $1
+    WHERE r."area_trabajo"::integer IN (
+        SELECT "area_encargada" 
+        FROM "IntermedioCoordinadores"
+        WHERE "coordinador" = $1
+    )
     ORDER BY r."created_at" DESC`,
-        [coordinadorId],
+        [coordinadorDocumentoId],
         (err, res) => {
             if (err) {
                 resp.status(err.status || 500).json({ error: err.message });
                 console.error("❌ Error al obtener reportes por coordinador:", err);
             } else {
+                console.log("✅ Reportes encontrados:", res.rows.length);
                 resp.json(res.rows);
             }
         }

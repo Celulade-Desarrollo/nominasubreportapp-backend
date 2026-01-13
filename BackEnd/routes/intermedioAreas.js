@@ -8,14 +8,24 @@ router.get("/", (req, resp) => {
     intermedioController.GetIntermedio(req, resp);
 });
 
-// GET intermedio by ID
-router.get("/:id", (req, resp) => {
-    intermedioController.GetIntermedioById(req, resp);
-});
-
 // GET all areas by Company ID
 router.get("/company/:companyId", (req, resp) => {
     intermedioController.GetIntermedioByCompany(req, resp);
+});
+
+// GET all companies and areas for a coordinator
+router.get("/coordinator/:coordinadorId/companies", (req, resp) => {
+    intermedioController.GetCompaniesByCoordinatorAreas(req, resp);
+});
+
+// GET areas for a specific coordinator
+router.get("/coordinator/:coordinadorId/areas", (req, resp) => {
+    intermedioController.GetAreasByCoordinator(req, resp);
+});
+
+// GET intermedio by ID
+router.get("/:id", (req, resp) => {
+    intermedioController.GetIntermedioById(req, resp);
 });
 
 // POST create new intermedio
