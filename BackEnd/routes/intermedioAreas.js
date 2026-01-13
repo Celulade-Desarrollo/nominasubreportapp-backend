@@ -3,9 +3,14 @@ const express = require("express");
 
 const router = express.Router();
 
-// GET all intermedio records
+// GET all intermedio records (filtrado - con coordinador si existe)
 router.get("/", (req, resp) => {
     intermedioController.GetIntermedio(req, resp);
+});
+
+// GET all companies (sin filtro - TODAS las empresas con sus áreas)
+router.get("/companies", (req, resp) => {
+    intermedioController.GetAllCompaniesWithAreas(req, resp);
 });
 
 // GET all areas by Company ID

@@ -1,6 +1,64 @@
 const poolL = require("../config/database");
 
-// GET all intermedio areas
+// GET all intermedio areas (sin filtro - TODAS las empresas y áreas)
+function GetAllIntermedio(req, resp) {
+    console.log("📍 GetAllIntermedio - Obteniendo TODAS las áreas sin filtro");
+    
+    poolL.query(
+        `SELECT DISTINCT
+      i."id",
+      i."created_at",
+      i."company_cliente",
+      i."area_cliente",
+      c."nombre_company",
+      c."elemento_pep",
+      a."nombre_area"
+    FROM "IntermedioAreasEnCompany" i
+    LEFT JOIN "Companies" c ON i."company_cliente"::text = c."elemento_pep"::text
+    LEFT JOIN "AreasTrabajos" a ON i."area_cliente" = a."id"
+    ORDER BY c."nombre_company", a."nombre_area"`,
+        (err, res) => {
+            if (err) {
+                resp.status(err.status || 500).json({ error: err.message });
+                console.error("❌ Error al obtener todas las áreas:", err);
+            } else {
+                console.log("✅ Todas las áreas obtenidas:", res.rows.length);
+                resp.json(res.rows);
+            }
+        }
+    );
+}
+
+// GET all companies with their areas (sin filtro - TODAS las empresas con áreas)
+function GetAllCompaniesWithAreas(req, resp) {
+    console.log("📍 GetAllCompaniesWithAreas - Obteniendo TODAS las empresas con áreas sin filtro");
+    
+    poolL.query(
+        `SELECT DISTINCT
+      i."id",
+      i."created_at",
+      i."company_cliente",
+      i."area_cliente",
+      c."nombre_company",
+      c."elemento_pep",
+      a."nombre_area"
+    FROM "IntermedioAreasEnCompany" i
+    LEFT JOIN "Companies" c ON i."company_cliente"::text = c."elemento_pep"::text
+    LEFT JOIN "AreasTrabajos" a ON i."area_cliente" = a."id"
+    ORDER BY c."nombre_company", a."nombre_area"`,
+        (err, res) => {
+            if (err) {
+                resp.status(err.status || 500).json({ error: err.message });
+                console.error("❌ Error al obtener empresas con áreas:", err);
+            } else {
+                console.log("✅ Empresas con áreas obtenidas:", res.rows.length);
+                resp.json(res.rows);
+            }
+        }
+    );
+}
+
+// GET all intermedio areas (original - deprecated, usar GetAllIntermedio)
 function GetIntermedio(req, resp) {
     poolL.query(
         `SELECT 
@@ -236,6 +294,8 @@ module.exports = {
     GetIntermedioByCompany,
     GetCompaniesByCoordinatorAreas,
     GetAreasByCoordinator,
+    GetAllIntermedio,
+    GetAllCompaniesWithAreas,
     PostIntermedio,
     PutIntermedioById,
     DeleteIntermedioById

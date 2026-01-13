@@ -20,6 +20,7 @@ const ReportesRoutes = require("./routes/reportes.js");
 const ClientesRoutes = require("./routes/clientes.js");
 const RolesRoutes = require("./routes/roles.js");
 const UsuariosRoutes = require("./routes/usuarios.js");
+const IntermediaCompanyCoordinadorRoutes = require("./routes/intermedioCompanyCoordinador.js");
 
 // Registrar rutas
 app.use("/Areas", AreasRoutes);
@@ -29,6 +30,7 @@ app.use("/Reportes", ReportesRoutes);
 app.use("/Clientes", ClientesRoutes);
 app.use("/Roles", RolesRoutes);
 app.use("/Usuarios", UsuariosRoutes);
+app.use("/CompanyCoordinator", IntermediaCompanyCoordinadorRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto ${PORT}`);
