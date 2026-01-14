@@ -155,7 +155,7 @@ function PostReporte(req, resp) {
 
 // PUT update reporte by ID
 function PutReporteById(req, resp) {
-    const { horas, fecha_trabajada, cliente, documento_id, area_trabajo } = req.body;
+    const { horas, fecha_trabajada, cliente, documento_id, area_trabajo, aprobadopor } = req.body;
     const id = req.params.id;
 
     // Construir la consulta dinámicamente
@@ -191,6 +191,11 @@ function PutReporteById(req, resp) {
     if (req.body.aprobado !== undefined) {
         campos.push(`"aprobado"=$${contador}`);
         valores.push(req.body.aprobado);
+        contador++;
+    }
+    if (aprobadopor !== undefined) {
+        campos.push(`"aprobadopor"=$${contador}`);
+        valores.push(aprobadopor);
         contador++;
     }
 
@@ -253,13 +258,16 @@ function GetReportesByCoordinador(req, resp) {
       r."documento_id",
       r."area_trabajo",
       r."aprobado",
+      r."aprobadopor",
       c."nombre_company",
       a."nombre_area",
-      u."nombre_usuario" as "nombre_empleado"
+      u."nombre_usuario" as "nombre_empleado",
+      u2."nombre_usuario" as "nombre_aprobador"
     FROM "Reportes" r
     LEFT JOIN "Companies" c ON r."cliente" = c."elemento_pep"
     LEFT JOIN "AreasTrabajos" a ON r."area_trabajo"::integer = a."id"
     LEFT JOIN "Usuarios" u ON r."documento_id" = u."documento_id"
+    LEFT JOIN "Usuarios" u2 ON r."aprobadopor" = u2."documento_id"
     WHERE r."area_trabajo"::integer IN (
         SELECT "area_encargada" 
         FROM "IntermedioCoordinadores"
