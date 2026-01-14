@@ -16,7 +16,7 @@ function GetReportes(req, resp) {
       a."nombre_area"
     FROM "Reportes" r
     LEFT JOIN "Companies" c ON r."cliente" = c."elemento_pep"
-    LEFT JOIN "AreasTrabajos" a ON r."area_trabajo" = a."id"::text
+    LEFT JOIN "AreasTrabajos" a ON r."area_trabajo"::integer = a."id"
     ORDER BY r."created_at" DESC`,
         (err, res) => {
             if (err) {
@@ -45,7 +45,7 @@ function GetReporteById(req, resp) {
       a."nombre_area"
     FROM "Reportes" r
     LEFT JOIN "Companies" c ON r."cliente" = c."elemento_pep"
-    LEFT JOIN "AreasTrabajos" a ON r."area_trabajo" = a."id"::text
+    LEFT JOIN "AreasTrabajos" a ON r."area_trabajo"::integer = a."id"
     WHERE r."id" = $1`,
         [req.params.id],
         (err, res) => {
@@ -81,7 +81,7 @@ function GetReportesByDocumento(req, resp) {
       a."nombre_area"
     FROM "Reportes" r
     LEFT JOIN "Companies" c ON r."cliente" = c."elemento_pep"
-    LEFT JOIN "AreasTrabajos" a ON r."area_trabajo" = a."id"::text
+    LEFT JOIN "AreasTrabajos" a ON r."area_trabajo"::integer = a."id"
     WHERE r."documento_id" = $1
     ORDER BY r."created_at" DESC`,
         [documentoId],
@@ -112,7 +112,7 @@ function GetReportesByCliente(req, resp) {
       a."nombre_area"
     FROM "Reportes" r
     LEFT JOIN "Companies" c ON r."cliente" = c."elemento_pep"
-    LEFT JOIN "AreasTrabajos" a ON r."area_trabajo" = a."id"::text
+    LEFT JOIN "AreasTrabajos" a ON r."area_trabajo"::integer = a."id"
     WHERE r."cliente" = $1
     ORDER BY r."created_at" DESC`,
         [req.params.clienteId],
@@ -260,12 +260,12 @@ function GetReportesByCoordinador(req, resp) {
       u."nombre_usuario" as "nombre_empleado"
     FROM "Reportes" r
     LEFT JOIN "Companies" c ON r."cliente" = c."elemento_pep"
-    LEFT JOIN "AreasTrabajos" a ON r."area_trabajo" = a."id"::text
+    LEFT JOIN "AreasTrabajos" a ON r."area_trabajo"::integer = a."id"
     LEFT JOIN "Usuarios" u ON r."documento_id" = u."documento_id"
     WHERE r."area_trabajo"::integer IN (
         SELECT "area_encargada" 
         FROM "IntermedioCoordinadores"
-        WHERE "coordinador" = $1
+        WHERE "coordinador" = $1::bigint
     )
     ORDER BY r."created_at" DESC`,
         [coordinadorDocumentoId],
