@@ -237,14 +237,12 @@ function DeleteReporteById(req, resp) {
 function GetReportesByCoordinador(req, resp) {
     const coordinadorDocumentoId = req.params.coordinadorId;
 
-    console.log("📍 GetReportesByCoordinador - coordinadorDocumentoId recibido:", coordinadorDocumentoId);
-
     if (!coordinadorDocumentoId || coordinadorDocumentoId === "undefined") {
         return resp.status(400).json({ error: "Se requiere el ID/documento del coordinador" });
     }
 
     // La relación correcta es: coordinador → area_encargada en IntermedioCoordinadores
-    // Luego buscamos reportes que tengan area_trabajo en esas áreas
+    // Y coordinador → elemento_pep en intermedio_company_coordinador
     poolL.query(
         `SELECT 
       r."id",
@@ -267,6 +265,11 @@ function GetReportesByCoordinador(req, resp) {
         FROM "IntermedioCoordinadores"
         WHERE "coordinador" = $1::bigint
     )
+    AND r."cliente" IN (
+        SELECT "elemento_pep"
+        FROM "intermedio_company_coordinador"
+        WHERE "documento_id_coordinador" = $1::bigint
+    )
     ORDER BY r."created_at" DESC`,
         [coordinadorDocumentoId],
         (err, res) => {
@@ -274,7 +277,6 @@ function GetReportesByCoordinador(req, resp) {
                 resp.status(err.status || 500).json({ error: err.message });
                 console.error("❌ Error al obtener reportes por coordinador:", err);
             } else {
-                console.log("✅ Reportes encontrados:", res.rows.length);
                 resp.json(res.rows);
             }
         }
