@@ -3,7 +3,7 @@ const poolL = require("../config/database");
 // GET all intermedio areas (sin filtro - TODAS las empresas y áreas)
 function GetAllIntermedio(req, resp) {
     console.log("📍 GetAllIntermedio - Obteniendo TODAS las áreas sin filtro");
-    
+
     poolL.query(
         `SELECT DISTINCT
       i."id",
@@ -31,8 +31,8 @@ function GetAllIntermedio(req, resp) {
 
 // GET all companies with their areas (sin filtro - TODAS las empresas con áreas)
 function GetAllCompaniesWithAreas(req, resp) {
-    console.log("📍 GetAllCompaniesWithAreas - Obteniendo TODAS las empresas con áreas sin filtro");
-    
+    console.log("📍 GetAllCompaniesWithAreas - Obteniendo TODAS las empresas con áreas activas");
+
     poolL.query(
         `SELECT DISTINCT
       i."id",
@@ -45,6 +45,7 @@ function GetAllCompaniesWithAreas(req, resp) {
     FROM "IntermedioAreasEnCompany" i
     LEFT JOIN "Companies" c ON i."company_cliente"::text = c."elemento_pep"::text
     LEFT JOIN "AreasTrabajos" a ON i."area_cliente" = a."id"
+    WHERE c."is_active" = true
     ORDER BY c."nombre_company", a."nombre_area"`,
         (err, res) => {
             if (err) {
@@ -112,9 +113,9 @@ function GetIntermedioById(req, resp) {
 // GET intermedio by Company ID (útil para obtener todas las áreas de una compañía)
 function GetIntermedioByCompany(req, resp) {
     const companyId = req.params.companyId;
-    
+
     console.log("📍 GetIntermedioByCompany - companyId recibido:", companyId, "tipo:", typeof companyId);
-    
+
     poolL.query(
         `SELECT 
       i."id",
